@@ -89,7 +89,7 @@ and install it with
 
 ```ruby
     # create a gateway with a persistent connection
-    gateway = Pushmeup::APNS::Gateway.new(permanent: true)
+    gateway = Pushmeup::APNS::Gateway.new(persistent: true)
 
     device_token = '123abc456def'
 

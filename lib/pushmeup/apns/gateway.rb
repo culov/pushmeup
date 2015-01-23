@@ -2,6 +2,8 @@ require 'socket'
 require 'openssl'
 
 module Pushmeup::APNS
+  class CertificateNotSetException < StandardError; end
+  class CertificateFileNotFoundException < StandardError; end
 
   class Gateway
     HOST = 'gateway.sandbox.push.apple.com'
@@ -16,8 +18,8 @@ module Pushmeup::APNS
     end
 
     def check_options
-      raise "The path to your pem file is not set. (APNS.pem = /path/to/cert.pem)" unless pem
-      raise "The path to your pem file does not exist!" unless File.exist?(pem)
+      raise CertificateNotSetException, "The path to your pem file is not set. (APNS.pem = /path/to/cert.pem)" unless pem
+      raise CertificateFileNotFoundException, "The path to your pem file does not exist!" unless File.exist?(pem)
     end
 
     def host

@@ -38,64 +38,82 @@ and install it with
 
         $ openssl pkcs12 -in cert.p12 -out cert.pem -nodes -clcerts
 
-3. After you have created your ``pem`` file. Set the host, port and certificate file location on the APNS class. You just need to set this once:
+3. After you have created your ``pem`` file you can create your gateway
 
-        APNS.host = 'gateway.push.apple.com'
-        # gateway.sandbox.push.apple.com is default and only for development
-        # gateway.push.apple.com is only for production
+```ruby
+        gateway = Pushmeup::APNS::Gateway.new(pem: '/path/to/pem/file')
 
-        APNS.port = 2195
-        # this is also the default. Shouldn't ever have to set this, but just in case Apple goes crazy, you can.
+        # or, in the case that your certificate has a password:
+        gateway = Pushmeup::APNS::Gateway.new(pem: '/path/to/pem/file', pass: 'password')
 
-        APNS.pem  = '/path/to/pem/file'
-        # this is the file you just created
+        # Only the pem option is mandatory, the other use default values
+        gateway = Pushmeup::APNS::Gateway.new(pem: '/path/to/pem/file', host:
+'gateway.push.apple.com', port: 2195)
 
-        APNS.pass = ''
-        # Just in case your pem need a password
+        # Alternatively you can set the options in the config
+        # and later instantiate the gateway, in case you have to create more
+        # than one and don't want to repeat the options
+
+        Pushmeup.configuration.apns_pem = '/path/to/pem/file'
+        Pushmeup.configuration.apns_pass = 'password'
+        Pushmeup.configuration.apns_port = 2915
+
+        gateway = Pushmeup::APNS::Gateway.new
+```
+
+
 
 ### Usage
 
 #### Sending a single notification:
 
+```ruby
     device_token = '123abc456def'
-    APNS.send_notification(device_token, 'Hello iPhone!' )
-    APNS.send_notification(device_token, :alert => 'Hello iPhone!', :badge => 1, :sound => 'default', :category => 'cat1', :content_available => false)
+    gateway.send_notification(device_token, 'Hello iPhone!' )
+    gateway.send_notification(device_token, :alert => 'Hello iPhone!', :badge => 1, :sound => 'default', :category => 'cat1', :content_available => false)
+```
 
 #### Sending multiple notifications
 
+```ruby
     device_token = '123abc456def'
-    n1 = APNS::Notification.new(device_token, 'Hello iPhone!' )
-    n2 = APNS::Notification.new(device_token, :alert => 'Hello iPhone!', :badge => 1, :sound => 'default', :category => 'cat1', :content_available => true)
-    APNS.send_notifications([n1, n2])
+    n1 = Pushmeup::APNS::Notification.new(device_token, 'Hello iPhone!' )
+    n2 = Pushmeup::APNS::Notification.new(device_token, :alert => 'Hello iPhone!', :badge => 1, :sound => 'default', :category => 'cat1', :content_available => true)
+    gateway.send_notifications([n1, n2])
+```
 
 > All notifications passed as a parameter will be sent on a single connection, this is done to improve
 > reliability with APNS servers.
 
 #### Another way to send multiple notifications is to send notifications in a persistent connection (thread safe)
 
-    # Define that you want persistent connection
-    APNS.start_persistence
+```ruby
+    # create a gateway with a persistent connection
+    gateway = Pushmeup::APNS::Gateway.new(permanent: true)
 
     device_token = '123abc456def'
 
     # Send single notifications
-    APNS.send_notification(device_token, 'Hello iPhone!' )
-    APNS.send_notification(device_token, :alert => 'Hello iPhone!', :badge => 1, :sound => 'default', :category => 'cat1')
+    gateway.send_notification(device_token, 'Hello iPhone!' )
+    gateway.send_notification(device_token, :alert => 'Hello iPhone!', :badge => 1, :sound => 'default', :category => 'cat1')
 
     # Send multiple notifications
-    n1 = APNS::Notification.new(device_token, 'Hello iPhone!' )
-    n2 = APNS::Notification.new(device_token, :alert => 'Hello iPhone!', :badge => 1, :sound => 'default')
-    APNS.send_notifications([n1, n2])
+    n1 = Pushmeup::APNS::Notification.new(device_token, 'Hello iPhone!' )
+    n2 = Pushmeup::APNS::Notification.new(device_token, :alert => 'Hello iPhone!', :badge => 1, :sound => 'default')
+    gateway.send_notifications([n1, n2])
 
     ...
 
-    # Stop persistence, from this point each new push will open and close connections
-    APNS.stop_persistence
+    gateway.close #in case you want to close the connection
+```
+
 
 #### Sending more information along
 
-    APNS.send_notification(device_token, :alert => 'Hello iPhone!', :badge => 1, :sound => 'default',
+```ruby
+    gateway.send_notification(device_token, :alert => 'Hello iPhone!', :badge => 1, :sound => 'default',
                                         :other => {:sent => 'with apns gem', :custom_param => "value"})
+```
 
 this will result in a payload like this:
 
@@ -103,6 +121,7 @@ this will result in a payload like this:
 
 ### Getting your iOS device token
 
+```objective-c
     - (void)applicationDidFinishLaunching:(UIApplication *)application {
         // Register with apple that this app will use push notification
         ...
@@ -115,13 +134,16 @@ this will result in a payload like this:
 
     - (void)application:(UIApplication *)application didRegisterForRemoteNotificationsWithDeviceToken:(NSData *)deviceToken {
         // Show the device token obtained from apple to the log
-        NSLog("deviceToken: %", deviceToken);
+        NSLog("deviceToken: %s", deviceToken);
     }
+```
 
 ## GCM (Google Cloud Messaging)
 
 ### Configure
 
+
+```ruby
 		GCM.host = 'https://android.googleapis.com/gcm/send'
 		# https://android.googleapis.com/gcm/send is default
 
@@ -130,11 +152,13 @@ this will result in a payload like this:
 
 		GCM.key = "123abc456def"
 		# this is the apiKey obtained from here https://code.google.com/apis/console/
+```
 
 ### Usage
 
 #### Sending a single notification:
 
+```ruby
 		destination = ["device1", "device2", "device3"]
 		# can be an string or an array of strings containing the regIds of the devices you want to send
 
@@ -149,11 +173,13 @@ this will result in a payload like this:
 
 		GCM.send_notification( destination, data, :collapse_key => "placar_score_global", :time_to_live => 3600, :delay_while_idle => false )
 		# Notification with custom information and parameters
+```
 
 for more information on parameters check documentation: [GCM | Android Developers](http://developer.android.com/guide/google/gcm/gcm.html#request)
 
 #### Sending multiple notifications:
 
+```ruby
 		destination1 = "device1"
 		destination2 = ["device2"]
 		destination3 = ["device1", "device2", "device3"]
@@ -171,6 +197,7 @@ for more information on parameters check documentation: [GCM | Android Developer
 
 		GCM.send_notifications( [n1, n2, n3] )
 		# In this case, every notification has his own parameters
+```
 
 for more information on parameters check documentation: [GCM | Android Developers](http://developer.android.com/guide/google/gcm/gcm.html#request)
 
@@ -184,12 +211,15 @@ You can use multiple keys to send notifications, to do it just do this changes i
 
 #### Configure
 
+```ruby
 		GCM.key = { :key1 => "123abc456def", :key2 => "456def123abc" }
 		# the ``:key1`` and the ``:key2`` can be any object, they can be the projectID, the date, the version, doesn't matter.
 		# The only restrain is: they need to be valid keys for a hash.
+```
 
 #### Usage
 
+```ruby
 		# For single notification
 		GCM.send_notification( destination, :identity => :key1 )
 		# Empty notification
@@ -209,21 +239,25 @@ You can use multiple keys to send notifications, to do it just do this changes i
 
 		GCM.send_notifications( [n1, n2, n3] )
 		# In this case, every notification has his own parameters, options and key
+```
 
 ## FIRE (Amazon Messaging)
 
 ### Configure
 
+```ruby
 		FIRE.client_id = "amzn1.application-oa2-client.12345678sdfgsdfg"
 		# this is the Client ID obtained from your Security Profile Management on amazon developers
 
 		FIRE.client_secret = "fkgjsbegksklwr863485245ojowe345"
         # this is the Client Secret obtained from your Security Profile Management on amazon developers
+```
 
 ### Usage
 
 #### Sending a single notification:
 
+```ruby
 		destination = "tydgfhewgnwe37586329586ejthe93053th346hrth3t"
 		# can be an string or an array of strings containing the regId of the device you want to send
 
@@ -238,11 +272,13 @@ You can use multiple keys to send notifications, to do it just do this changes i
 
 		FIRE.send_notification( destination, data, :consolidationKey => "placar_score_global", :expiresAfter => 3600)
 		# Notification with custom information and parameters
+```
 
 for more information on parameters check documentation: [Amazon Messaging | Developers](https://developer.amazon.com/public/apis/engage/device-messaging/tech-docs/06-sending-a-message#Request Format)
 
 #### Sending multiple notifications:
 
+```ruby
 		destination1 = "device1"
 		destination2 = ["device2"]
 		destination3 = ["device1", "device2", "device3"]
@@ -260,6 +296,7 @@ for more information on parameters check documentation: [Amazon Messaging | Deve
 
 		FIRE.send_notifications( [n1, n2, n3] )
 		# In this case, every notification has his own parameters
+```
 
 for more information on parameters check documentation: [Amazon Messaging | Developers](https://developer.amazon.com/public/apis/engage/device-messaging/tech-docs/06-sending-a-message#Request Format)
 

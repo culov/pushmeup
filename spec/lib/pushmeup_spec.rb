@@ -1,33 +1,46 @@
 require 'spec_helper'
 
 describe Pushmeup do
-
-
-
   describe "APNS" do
-    let(:apns) {Pushmeup::APNS::Gateway.new}
 
-    it "should not forget the APNS default parameters" do
-      apns.host.should == "gateway.sandbox.push.apple.com"
-      apns.port.should == 2195
-      apns.pem.should be_equal(nil)
-      apns.pass.should be_equal(nil)
+    context "you don't set a pem file to be used" do
+      it "should raise an exception when it starts" do
+        expect{ Pushmeup::APNS::Gateway.new}.to raise_error(Pushmeup::APNS::CertificateNotSetException)
+      end
     end
 
-    describe "Notifications" do
+    context "you set a pem path that dones't exist" do
+      it "should raise an exception when it starts" do
+        expect{ Pushmeup::APNS::Gateway.new(pem: "wroooong.pem")}.to raise_error(Pushmeup::APNS::CertificateFileNotFoundException)
+      end
+    end
 
-      describe "#==" do
+    context "you set a pem file to be used" do
+      let(:pem_path) { File.expand_path(File.join("..", "..", "fixtures", "dummy.pem"), __FILE__) }
+      let(:apns) {Pushmeup::APNS::Gateway.new(pem: pem_path)}
 
-        it "should properly equate objects without caring about object identity" do
-          a = Pushmeup::APNS::Notification.new("123", {:alert => "hi"})
-          b = Pushmeup::APNS::Notification.new("123", {:alert => "hi"})
-          a.should eq(b)
+      it "should not forget the APNS default parameters" do
+        expect(apns.host).to eq("gateway.sandbox.push.apple.com")
+        expect(apns.port).to eq(2195)
+        expect(apns.pem).to eq(pem_path)
+        expect(apns.pass).to be_nil
+      end
+
+      describe "Notifications" do
+
+        describe "#==" do
+
+          it "should properly equate objects without caring about object identity" do
+            a = Pushmeup::APNS::Notification.new("123", {:alert => "hi"})
+            b = Pushmeup::APNS::Notification.new("123", {:alert => "hi"})
+            expect(a).to eq(b)
+          end
+
         end
 
       end
 
     end
-
   end
 
   describe "GCM" do
@@ -41,28 +54,28 @@ describe Pushmeup do
 
       it "should allow only notifications with device_tokens as array" do
         n = Pushmeup::GCM::Notification.new("id", @options)
-        n.device_tokens.is_a?(Array).should be_true
+        expect(n.device_tokens.class).to eq(Array)
 
         n.device_tokens = ["a" "b", "c"]
-        n.device_tokens.is_a?(Array).should be_true
+        expect(n.device_tokens.class).to eq(Array)
 
         n.device_tokens = "a"
-        n.device_tokens.is_a?(Array).should be_true
+        expect(n.device_tokens.class).to eq(Array)
       end
 
       it "should allow only notifications with data as hash with :data root" do
         n = Pushmeup::GCM::Notification.new("id", { :data => "data" })
 
-        n.data.is_a?(Hash).should be_true
-        n.data.should == {:data => "data"}
+        expect(n.data.class).to eq(Hash)
+        expect(n.data).to eq({:data => "data"})
 
         n.data = {:a => ["a", "b", "c"]}
-        n.data.is_a?(Hash).should be_true
-        n.data.should == {:a => ["a", "b", "c"]}
+        expect(n.data.class).to eq(Hash)
+        expect(n.data).to eq({:a => ["a", "b", "c"]})
 
         n.data = {:a => "a"}
-        n.data.is_a?(Hash).should be_true
-        n.data.should == {:a => "a"}
+        expect(n.data.class).to eq(Hash)
+        expect(n.data).to eq({:a => "a"})
       end
 
       describe "#==" do
@@ -70,7 +83,7 @@ describe Pushmeup do
         it "should properly equate objects without caring about object identity" do
           a = Pushmeup::GCM::Notification.new("id", { :data => "data" })
           b = Pushmeup::GCM::Notification.new("id", { :data => "data" })
-          a.should eq(b)
+          expect(a).to eq(b)
         end
 
       end

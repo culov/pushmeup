@@ -143,7 +143,7 @@ module Pushmeup::APNS
 
         yield
 
-      rescue StandardError, Errno::EPIPE
+      rescue StandardError, OpenSSL::SSL::SSLError, Errno::EPIPE
         raise unless attempts < RETRIES
         kill_connection
         attempts += 1

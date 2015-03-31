@@ -8,7 +8,7 @@ module Pushmeup::APNS
   class Gateway
     HOST = 'gateway.sandbox.push.apple.com'
     PORT = 2195
-    RETRIES = 3
+    RETRIES = 5
 
     @@mutex = Mutex.new
 
@@ -138,6 +138,7 @@ module Pushmeup::APNS
       begin
         # If no @ssl is created or if @ssl is closed we need to start it
         if connection_unavailable?
+          kill_connection # to ensure both ssl and sock are nil
           ssl.connect
         end
 

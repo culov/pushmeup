@@ -8,7 +8,6 @@ module Pushmeup::APNS
   class Gateway
     HOST = 'gateway.sandbox.push.apple.com'
     PORT = 2195
-    RETRIES = 5
 
     @@mutex = Mutex.new
 
@@ -62,6 +61,9 @@ module Pushmeup::APNS
             @ssl.write(n.packaged_notification)
           end
         end
+
+        # Only close if not persistent
+        kill_connection unless persistent
       end
     end
 
@@ -133,6 +135,7 @@ module Pushmeup::APNS
     #######
 
     def with_connection
+      retries  = 5
       attempts = 1
 
       begin
@@ -145,15 +148,9 @@ module Pushmeup::APNS
         yield
 
       rescue StandardError, OpenSSL::SSL::SSLError, Errno::EPIPE
-        raise unless attempts < RETRIES
-        kill_connection
+        raise unless attempts < retries
         attempts += 1
         retry
-      end
-
-      # Only close if not persistent
-      unless persistent
-        kill_connection
       end
     end
 

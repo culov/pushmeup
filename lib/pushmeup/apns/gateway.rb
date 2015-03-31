@@ -72,7 +72,7 @@ module Pushmeup::APNS
     # notifications to the devices associated with those apps. See The Feedback Service for
     # more information. https://developer.apple.com/library/ios/documentation/NetworkingInternet/Conceptual/RemoteNotificationsPG/Chapters/CommunicatingWIthAPS.html#//apple_ref/doc/uid/TP40008194-CH101-SW3
     def feedback
-      fhost         = HOST.gsub('gateway','feedback')
+      fhost         = host.gsub('gateway','feedback')
       fsock         = TCPSocket.new(fhost, 2196)
       fssl          = OpenSSL::SSL::SSLSocket.new(fsock, context)
       fssl.connect

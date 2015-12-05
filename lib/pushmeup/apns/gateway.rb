@@ -55,6 +55,8 @@ module Pushmeup::APNS
     end
 
     def send_notifications(notifications)
+            Delayed::Worker.logger.debug "notifications: " + notifications.inspect
+      Delayed::Worker.logger.debug " SSL: " + @ssl.inspect
       @@mutex.synchronize do
         with_connection do
           notifications.each do |n|

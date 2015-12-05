@@ -58,9 +58,12 @@ module Pushmeup::APNS
             Delayed::Worker.logger.debug "notifications: " + notifications.inspect
       Delayed::Worker.logger.debug " SSL: " + @ssl.inspect
       @@mutex.synchronize do
+        Delayed::Worker.logger.debug "11: "
         with_connection do
+          Delayed::Worker.logger.debug "22: "
           notifications.each do |n|
-            @ssl.write(n.packaged_notification)
+            Delayed::Worker.logger.debug "33: "
+           Delayed::Worker.logger.debug "ssl write:: "+ @ssl.write(n.packaged_notification).inspect
           end
         end
 
